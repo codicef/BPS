@@ -72,6 +72,7 @@ Computing BPS-LR...
 Results:
 BPS-RF: 0.9973
 BPS-LR: 0.9999 (linear batch signal)
+```
 
 ## License
 
