@@ -6,7 +6,6 @@ import numpy as np
 
 
 
-
 def parse_anndata(adata, batch_key='batch'):
     """
     Parse an AnnData object to extract relevant information for downstream analysis.
@@ -49,8 +48,13 @@ def parse_anndata(adata, batch_key='batch'):
 
 
     # Check batch_key presence
-    if batch_key not in adata.obs.columns:
+    if batch_key not in adata.obs.columns and 'tech' not in adata.obs.columns:
+        print(f"Available keys in adata.obs: {adata.obs.columns.tolist()}")
         raise KeyError(f"Batch key '{batch_key}' not found in adata.obs.")
+    elif 'tech' in adata.obs.columns:
+        print(f"Warning: 'tech' found in adata.obs, using it as batch_key instead of '{batch_key}'")
+        batch_key = 'tech'
+
     # Extract the labels (batch information)
     batches = adata.obs[batch_key].values
 

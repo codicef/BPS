@@ -7,7 +7,7 @@ from sklearn.model_selection import cross_val_score
 from sklearn.preprocessing import StandardScaler
 import anndata
 import pandas as pd
-from parsers import parse_anndata, parse_dataframe
+from data import parse_anndata, parse_dataframe
 
 
 def safe_truncate(X, lower_percentile=1, upper_percentile=99):

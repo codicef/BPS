@@ -27,7 +27,7 @@ The tool accepts:
 To compute the BPS-RF and BPS-LR scores, run the script with the following command:
 
 ```bash
-python run_bps.py <input_file> [--batch_key <batch_column>] [--n_jobs <num_jobs>]
+python src/run_bps.py <input_file> [--batch_key <batch_column>] [--n_jobs <num_jobs>]
 ```
 
 ### Optional arguments
@@ -51,6 +51,28 @@ You can install the necessary dependencies using `pip`:
 ```bash
 pip install -r requirements.txt
 ```
+
+
+### Dataset example 
+We can use the **human_pancreas_norm_complexBatch.h5ad** dataset as a test dataset; it contains five distinct batches (technologies/sources of cells) along with annotated cell types and raw count matrices, making it ideal for evaluating and benchmarking integration methods. Download it here:https://figshare.com/ndownloader/files/24539828 (linked from the LIGER benchmarking).
+
+### Usage example
+
+```bash
+~/BPS (main) [1]> python3 src/run_bps.py ../sc_batch_correction/data/raw/dataset7/human_pancreas_5.h5ad
+Loading data...
+Loading adata from ../sc_batch_correction/data/raw/dataset7/human_pancreas_5.h5ad...
+Warning: 'tech' found in adata.obs, using it as batch_key instead of 'batch'
+Loaded ../sc_batch_correction/data/raw/dataset7/human_pancreas_5.h5ad with shape (16382, 19093) and 9 batches.
+Running BPS calculation...
+Preprocessing data...
+Computing BPS-RF...
+Computing BPS-LR...
+
+Results:
+BPS-RF: 0.9973
+BPS-LR: 0.9999 (linear batch signal)
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
