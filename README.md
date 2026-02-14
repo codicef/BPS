@@ -27,15 +27,18 @@ The tool accepts:
 To compute the BPS-RF and BPS-LR scores, run the script with the following command:
 
 ```bash
-python src/run_bps.py <input_file> [--batch_key <batch_column>] [--n_jobs <num_jobs>]
+python src/run_bps.py <input_file> [--batch_key <batch_column>] [--n_jobs <num_jobs>] [--feature_importance] [--top_n <N>] [--output_csv <path>]
 ```
 
 ### Optional arguments
 
-| Argument             | Description                                                         | Default   |
-|----------------------|---------------------------------------------------------------------|-----------|
-| `--batch_key <batch>`| Column name (CSV/TSV) or `.obs` key (h5ad) for batch labels         | `"batch"` |
-| `--n_jobs <num_jobs>`| Number of jobs to run in parallel for the BPS calculation           | 1         |
+| Argument               | Description                                                         | Default   |
+|------------------------|---------------------------------------------------------------------|-----------|
+| `--batch_key <batch>`  | Column name (CSV/TSV) or `.obs` key (h5ad) for batch labels         | `"batch"` |
+| `--n_jobs <num_jobs>`  | Number of jobs to run in parallel for the BPS calculation           | 1         |
+| `--feature_importance` | Compute and display feature importance (RF) and normalized coefficients (LR) | off |
+| `--top_n <N>`          | Number of top features to display when using `--feature_importance`  | 20        |
+| `--output_csv <path>`  | Save the full feature importance table to a CSV file                 | —         |
 
 ### Requirements
 
@@ -72,6 +75,34 @@ Computing BPS-LR...
 Results:
 BPS-RF: 0.9973
 BPS-LR: 0.9999 (linear batch signal)
+```
+
+#### With feature importance
+
+```bash
+python3 src/run_bps.py data.h5ad --feature_importance --top_n 5
+```
+
+This will print the BPS scores followed by a table of the top contributing genes:
+
+```
+Results:
+BPS-RF: 0.9973
+BPS-LR: 0.9999 (linear batch signal)
+
+Top 5 features by RF importance:
+  gene  rf_importance  lr_coef_norm
+ GENE1       0.01234       0.00987
+ GENE2       0.01100       0.00876
+ GENE3       0.00998       0.01102
+ GENE4       0.00870       0.00654
+ GENE5       0.00812       0.00543
+```
+
+To save the full table to a CSV file:
+
+```bash
+python3 src/run_bps.py data.h5ad --feature_importance --output_csv importance.csv
 ```
 
 ## License

@@ -19,17 +19,21 @@ def safe_truncate(X, lower_percentile=1, upper_percentile=99):
     X_clipped = np.clip(X, lower_bound, upper_bound)
     return X_clipped
 
-def calculate_bps(X, batches, default_preprocess=True, n_jobs=-1):
+def calculate_bps(X, batches, default_preprocess=True, n_jobs=-1, compute_importance=False):
     '''
     Computes BPS-RF and BPS-LR metrics for the given dataset.
 
     Parameters:
     - X: Feature matrix (gene expression data).
     - batches: Labels (batch information).
+    - default_preprocess: Whether to apply default preprocessing.
+    - n_jobs: Number of parallel jobs.
+    - compute_importance: If True, fit models on full data and return feature importances.
 
     Returns:
-    - BPS_RF: BPS-RF score.
-    - BPS_LR: BPS-LR score.
+    - (BPS_RF, BPS_LR) when compute_importance=False
+    - {"BPS_RF": float, "BPS_LR": float, "rf_importance": array, "lr_importance": array}
+      when compute_importance=True
     '''
 
     if default_preprocess:
@@ -53,12 +57,30 @@ def calculate_bps(X, batches, default_preprocess=True, n_jobs=-1):
     lr_scores = cross_val_score(lr, X, batches, cv=5, scoring='roc_auc_ovr')
     BPS_LR = (np.mean(lr_scores) - 0.5) / 0.5
 
-    return BPS_RF, BPS_LR
+    if not compute_importance:
+        return BPS_RF, BPS_LR
+
+    # Fit models on full dataset to extract feature importances
+    print("Computing feature importances...")
+    rf.fit(X, batches)
+    rf_importance = rf.feature_importances_
+
+    lr.fit(X, batches)
+    # Mean absolute coefficient across all classes (OVR), then normalize to sum to 1
+    lr_abs_coef = np.mean(np.abs(lr.coef_), axis=0)
+    lr_importance = lr_abs_coef / lr_abs_coef.sum()
+
+    return {
+        "BPS_RF": BPS_RF,
+        "BPS_LR": BPS_LR,
+        "rf_importance": rf_importance,
+        "lr_importance": lr_importance,
+    }
 
 
 
 
-def bps(input_data, batch_key='batch', n_jobs=-1, default_preprocess=True, verbose=True):
+def bps(input_data, batch_key='batch', n_jobs=-1, default_preprocess=True, verbose=True, compute_importance=False):
     '''
     Computes BPS-RF and BPS-LR metrics for the given dataset.
 
@@ -67,10 +89,12 @@ def bps(input_data, batch_key='batch', n_jobs=-1, default_preprocess=True, verbo
     - batch_key: Key in input_data that contains the batch information.
     - n_jobs: Number of jobs to run in parallel.
     - default_preprocess: Whether to apply default preprocessing (standardization and truncation).
+    - compute_importance: If True, also compute and return feature importances.
 
     Returns:
-    - BPS_RF: BPS-RF score.
-    - BPS_LR: BPS-LR score.
+    - (BPS_RF, BPS_LR) when compute_importance=False
+    - (BPS_RF, BPS_LR, importance_df) when compute_importance=True,
+      where importance_df is a DataFrame with columns: gene, rf_importance, lr_coef_norm
     '''
 
     if isinstance(input_data, anndata.AnnData):
@@ -88,9 +112,29 @@ def bps(input_data, batch_key='batch', n_jobs=-1, default_preprocess=True, verbo
         print(f"Loaded data with shape {X.shape} and {len(np.unique(batches))} batches.")
 
     # Compute BPS scores
-    BPS_RF, BPS_LR = calculate_bps(X, batches, default_preprocess=default_preprocess, n_jobs=n_jobs)
+    result = calculate_bps(X, batches, default_preprocess=default_preprocess, n_jobs=n_jobs,
+                           compute_importance=compute_importance)
+
+    if not compute_importance:
+        BPS_RF, BPS_LR = result
+        if verbose:
+            print(f"BPS-RF: {BPS_RF}")
+            print(f"BPS-LR: {BPS_LR}")
+        return BPS_RF, BPS_LR
+
+    BPS_RF = result["BPS_RF"]
+    BPS_LR = result["BPS_LR"]
 
     if verbose:
         print(f"BPS-RF: {BPS_RF}")
         print(f"BPS-LR: {BPS_LR}")
-    return BPS_RF, BPS_LR
+
+    # Build importance DataFrame
+    gene_labels = genes if genes is not None else [f"feature_{i}" for i in range(X.shape[1])]
+    importance_df = pd.DataFrame({
+        "gene": gene_labels,
+        "rf_importance": result["rf_importance"],
+        "lr_coef_norm": result["lr_importance"],
+    }).sort_values("rf_importance", ascending=False).reset_index(drop=True)
+
+    return BPS_RF, BPS_LR, importance_df

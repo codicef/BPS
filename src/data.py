@@ -108,6 +108,7 @@ def load_data(file_path, batch_key='batch', gene_key='gene'):
     Returns:
     - X: Feature matrix (gene expression data).
     - batches: Labels (batch information).
+    - genes: List of gene names (if available).
 
     '''
     if file_path.endswith('.h5ad'):
@@ -125,4 +126,4 @@ def load_data(file_path, batch_key='batch', gene_key='gene'):
         raise ValueError("Unsupported file format. Please provide a .h5ad, .csv, or .tsv file.")
     print(f"Loaded {file_path} with shape {X.shape} and {len(np.unique(batches))} batches.")
 
-    return X, batches
+    return X, batches, genes
